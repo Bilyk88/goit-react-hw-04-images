@@ -11,7 +11,6 @@ export const Searchbar = ({ onSubmit }) => {
   const [value, setValue] = useState('');
 
   const handleChange = event => {
-    console.dir(event.target.value);
     setValue(event.target.value);
   };
 

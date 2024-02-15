@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
@@ -7,85 +7,75 @@ import { Button } from './Button/Button';
 import { fetchImages } from 'api';
 import { Modal } from './Modal/Modal';
 
-export class App extends Component {
-  state = {
-    images: [],
-    value: '',
-    page: 1,
-    selectedImage: null,
-    isLoading: false,
-    error: false,
-    isModalOpen: false,
-  };
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [value, setValue] = useState('');
+  const [page, setPage] = useState(1);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  async componentDidUpdate(prevProps, prevState) {
-    const { page, value } = this.state;
-    if (prevState.value !== value || prevState.page !== page) {
+  useEffect(() => {
+    if (value === '') {
+      return;
+    }
+    async function getImages() {
       try {
-        this.setState({ isLoading: true, error: false });
+        setIsLoading(true);
+        setError(false);
         const searchResult = await fetchImages({ page, value });
-        this.setState(prevState => ({
-          images: [...prevState.images, ...searchResult],
-        }));
+        setImages(prev => [...prev, ...searchResult]);
       } catch (error) {
-        this.setState({ error: true });
+        setError(true);
         toast.error('Please, try again.');
       } finally {
-        this.setState({ isLoading: false });
+        setIsLoading(false);
       }
     }
-  }
+    getImages();
+  }, [page, value]);
 
-  handleSubmit = newValue => {
-    this.setState({ value: newValue, page: 1, images: [] });
+  const handleSubmit = newValue => {
+    setValue(newValue);
+    setPage(1);
+    setImages([]);
   };
 
-  handleLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const handleLoadMore = () => {
+    setPage(prev => prev + 1);
   };
 
-  openModal = image => {
-    this.setState({
-      isModalOpen: true,
-      selectedImage: image,
-    });
+  const openModal = image => {
+    setIsModalOpen(true);
+    setSelectedImage(image);
   };
 
-  closeModal = () => {
-    this.setState({
-      isModalOpen: false,
-    });
+  const closeModal = () => {
+    setIsModalOpen(false);
   };
 
-  render() {
-    const { images, selectedImage, isLoading, isModalOpen } = this.state;
-
-    return (
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr',
-          gridGap: '16px',
-          paddingBottom: '24px',
-        }}
-      >
-        <Searchbar onSubmit={this.handleSubmit} />
-        {images.length > 0 && (
-          <ImageGallery images={images} onClick={this.openModal} />
-        )}
-        {images.length > 0 && !isLoading && (
-          <Button onClick={this.handleLoadMore} />
-        )}
-        {isLoading && <Loader />}
-        {isModalOpen && (
-          <Modal onClose={this.closeModal}>
-            <img src={selectedImage} alt="" />
-          </Modal>
-        )}
-        <Toaster position="top-right" />
-      </div>
-    );
-  }
-}
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr',
+        gridGap: '16px',
+        paddingBottom: '24px',
+      }}
+    >
+      <Searchbar onSubmit={handleSubmit} />
+      {images.length > 0 && (
+        <ImageGallery images={images} onClick={openModal} />
+      )}
+      {images.length > 0 && !isLoading && <Button onClick={handleLoadMore} />}
+      {isLoading && <Loader />}
+      {isModalOpen && (
+        <Modal onClose={closeModal}>
+          <img src={selectedImage} alt="" />
+        </Modal>
+      )}
+      <Toaster position="top-right" />
+    </div>
+  );
+};
